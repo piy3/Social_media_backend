@@ -18,7 +18,7 @@ type application struct { // Application struct to hold application-wide depende
 type config struct {  //interface to hold configuration settings
 	addr string
 	db dbConfig
-
+	env string
 }
 
 type dbConfig struct {
@@ -38,10 +38,15 @@ func (app *application) mount() http.Handler{
 	 // Set a timeout value on the request context (ctx), that will signal
   // through ctx.Done() that the request has timed out and further
   // processing should be stopped.
-  r.Use(middleware.Timeout(60 * time.Second))
+  	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Route("/v1", func(r chi.Router){
 		r.Get("/health", app.healthCheckHandler)
+		r.Route("/posts", func(r chi.Router){
+			r.Post("/", app.createPostHandler)
+			// r.Get("/", app.listPostsHandler)
+			// r.Get("/{id}", app.getPostHandler)
+		})
 	})
 	return r
 }
