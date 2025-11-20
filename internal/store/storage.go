@@ -7,8 +7,9 @@ import (
 
 //this store implements repository pattern to interact with data storage
 
-type Storage struct{
+type Storage struct{	
 	Posts interface{
+		GetByID(context.Context, int64) (*Post, error)
 		Create(context.Context, *Post) error
 	}
 	Users interface{

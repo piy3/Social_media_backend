@@ -2,7 +2,9 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/piy3/social/internal/store"
 )
 
@@ -38,4 +40,25 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 	if err := writeJSON(w, http.StatusCreated, post); err != nil {
 		writeJSONError(w, http.StatusInternalServerError, err.Error())
 	}
+}
+
+
+func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
+	// Implementation for getting a post by ID
+	idParam := chi.URLParam(r, "postID")
+	id,err:=strconv.ParseInt(idParam,10,64)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, "invalid post ID")
+		return
+	}
+	ctx:= r.Context()
+	post, err := app.store.Posts.GetByID(ctx, id)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if err := writeJSON(w, http.StatusOK, post); err != nil {
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+	}
+
 }
