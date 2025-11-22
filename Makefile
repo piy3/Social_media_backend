@@ -9,6 +9,6 @@ migrate-up:
 	@migrate -path $(MIGRATIONS_PATH) -database $(DB_ADDR) up
 
 migrate-down:
-	@migrate -path $(MIGRATIONS_PATH) -database $(DB_ADDR) down
+	@migrate -path $(MIGRATIONS_PATH) -database $(DB_ADDR) down 1
 
 .PHONY: migration migrate-up migrate-down 

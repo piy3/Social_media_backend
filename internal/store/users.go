@@ -14,11 +14,11 @@ type User struct {
 	UpdatedAt string `json:"updated_at"`
 }
 
-type UsersStore struct {
+type UserStore struct {
 	db *sql.DB
 }
 
-func (s *UsersStore) Create(ctx context.Context, user *User) error {
+func (s *UserStore) Create(ctx context.Context, user *User) error {
 	// Implementation for creating a user in the database
 	query := `INSERT INTO users (username, email, password, created_at, updated_at)
 	VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id, created_at, updated_at`
