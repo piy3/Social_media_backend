@@ -3,29 +3,36 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 )
+
+var ErrNotFound = errors.New("resource not found")
 
 //this store implements repository pattern to interact with data storage
 
-type Storage struct{	
-	Posts interface{
+type Storage struct {
+	Posts interface {
 		Create(context.Context, *Post) error
 		GetByID(context.Context, int64) (*Post, error)
 		Update(context.Context, *Post) error
 		Delete(context.Context, int64) error
 	}
-	Users interface{
+	Users interface {
 		Create(context.Context, *User) error
+		GetByID(context.Context, int64) (*User, error)
+		Update(context.Context, *User) error
+		Delete(context.Context, int64) error
 	}
-	Comments interface{
+	Comments interface {
+		Create(context.Context, *Comment) error
 		GetByPostId(context.Context, int64) ([]*Comment, error)
 	}
 }
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
-		Posts:&PostStore{db},
-		Users:&UserStore{db},
-		Comments:&CommentStore{db},
+		Posts:    &PostStore{db},
+		Users:    &UserStore{db},
+		Comments: &CommentStore{db},
 	}
 }
