@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"strconv"
 
@@ -10,10 +11,11 @@ import (
 
 func Seed(store store.Storage) error {
 	ctx := context.Background()
+	tx:= &sql.Tx{}
 	// users
 	users := generateUser(100)
 	for _, u := range users {
-		err := store.Users.Create(ctx, u)
+		err := store.Users.Create(ctx,tx, u)
 		if err != nil {
 			log.Println("Error creating user:", err)
 			return err
@@ -22,7 +24,7 @@ func Seed(store store.Storage) error {
 	// posts
 	posts := generatePosts(200, users)
 	for _, p := range posts {
-		err := store.Posts.Create(ctx, p)
+		err := store.Posts.Create(ctx,tx, p)
 		if err != nil {
 			log.Println("Error creating post:", err)
 			return err
@@ -31,7 +33,7 @@ func Seed(store store.Storage) error {
 
 	comments := generateComments(500, posts, users)
 	for _, c := range comments {
-		err := store.Comments.Create(ctx, c)
+		err := store.Comments.Create(ctx,tx, c)
 		if err != nil {
 			log.Println("Error creating comment:", err)
 			return err

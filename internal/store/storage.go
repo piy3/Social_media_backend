@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 )
 
 var ErrNotFound = errors.New("resource not found")
@@ -18,7 +19,8 @@ type Storage struct {
 		Delete(context.Context, int64) error
 	}		
 	Users interface {
-		Create(context.Context, *User) error
+		Create(context.Context,*sql.Tx, *User) error
+		CreateAndInvite(ctx context.Context,user *User,token string,invitationExpiry time.Duration) error
 		GetByID(context.Context, int64) (*User, error)
 		Update(context.Context, *User) error
 		Delete(context.Context, int64) error
@@ -35,4 +37,19 @@ func NewStorage(db *sql.DB) Storage {
 		Users:    &UserStore{db},
 		Comments: &CommentStore{db},
 	}
+}
+
+
+func withTx(ctx context.Context, db *sql.DB, fn func(*sql.Tx) error) error {
+	tx,err:= db.BeginTx(ctx,nil)
+	if err!=nil{
+		return err
+	}
+	if err:= fn(tx);err!=nil{
+		if rbErr:= tx.Rollback();rbErr!=nil{
+			return rbErr
+		}
+		return err
+	}
+	return tx.Commit()
 }

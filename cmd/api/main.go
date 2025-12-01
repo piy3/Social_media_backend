@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"path/filepath"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/piy3/social/internal/db"
@@ -25,6 +26,9 @@ func main() {
 			maxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
 		},
 		env:env.GetString("ENV","development"),
+		mail: mailConfig{
+			exp: time.Hour *24*3, // 3 days
+		},
 	}
 	db,err:=db.New(
 		cfg.db.addr,

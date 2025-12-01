@@ -3,26 +3,45 @@ package store
 import (
 	"context"
 	"database/sql"
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	ID        int64  `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Password  string `json:"-"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID        int64    `json:"id"`
+	Username  string   `json:"username"`
+	Email     string   `json:"email"`
+	Password  password `json:"-"`
+	CreatedAt string   `json:"created_at"`
+	UpdatedAt string   `json:"updated_at"`
+}
+
+type password struct {
+	text *string
+	hash []byte
+}
+
+func (p *password) Set(plainText string) error {
+	// Implementation for hashing and setting the password
+	hash, err := bcrypt.GenerateFromPassword([]byte(plainText), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	p.text = &plainText
+	p.hash = hash
+	return nil
 }
 
 type UserStore struct {
 	db *sql.DB
 }
 
-func (s *UserStore) Create(ctx context.Context, user *User) error {
+func (s *UserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 	// Implementation for creating a user in the database
 	query := `INSERT INTO users (username, email, password, created_at, updated_at)
 	VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id, created_at, updated_at`
-	err := s.db.QueryRowContext(
+	err := tx.QueryRowContext(
 		ctx,
 		query,
 		user.Username,
@@ -84,6 +103,39 @@ func (s *UserStore) Delete(ctx context.Context, id int64) error {
 	}
 	if rows == 0 {
 		return ErrNotFound
+	}
+	return nil
+}
+
+func (s *UserStore) CreateAndInvite(ctx context.Context, user *User, token string, invitationExpiry time.Duration) error {
+	//transaction wrsapper
+	return withTx(ctx, s.db, func(tx *sql.Tx) error {
+		//crate the user
+		if err := s.Create(ctx, tx, user); err != nil {
+			return err
+		}
+		//create the user invitation
+
+		err := createInvitation(ctx, tx, user.ID, invitationExpiry, token)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+}
+
+func createInvitation(ctx context.Context, tx *sql.Tx, userID int64, expiry time.Duration, token string) error {
+	query := `INSERT INTO user_invitations (user_id, token, expiry, created_at)
+	VALUES ($1,$2, $3,NOW())`
+	_, err := tx.ExecContext(
+		ctx,
+		query,
+		userID,
+		token, 
+		time.Now().Add(expiry) )
+	if err != nil {	
+		return err
 	}
 	return nil
 }

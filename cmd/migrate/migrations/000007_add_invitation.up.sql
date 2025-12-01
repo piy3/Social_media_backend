@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS user_invitations (
+    token bytea NOT NULL PRIMARY KEY,
+    user_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

@@ -24,30 +24,30 @@ type UpdateUserPayload struct {
 	Email    *string `json:"email" validate:"omitempty,email"`
 }
 
-func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
-	var payload CreateUserPayload
-	if err := readJSON(r, &payload); err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if err := Validate.Struct(payload); err != nil {
-		writeJSONError(w, http.StatusBadRequest, err.Error())
-		return
-	}
+// func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
+// 	var payload CreateUserPayload
+// 	if err := readJSON(r, &payload); err != nil {
+// 		writeJSONError(w, http.StatusBadRequest, err.Error())
+// 		return
+// 	}
+// 	if err := Validate.Struct(payload); err != nil {
+// 		writeJSONError(w, http.StatusBadRequest, err.Error())
+// 		return
+// 	}
 
-	user := &store.User{
-		Username: payload.Username,
-		Email:    payload.Email,
-		Password: payload.Password,
-	}
-	if err := app.store.Users.Create(r.Context(), user); err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if err := writeJSON(w, http.StatusCreated, user); err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err.Error())
-	}
-}
+// 	user := &store.User{
+// 		Username: payload.Username,
+// 		Email:    payload.Email,
+// 		Password: payload.Password,
+// 	}
+// 	if err := app.store.Users.Create(r.Context(), user); err != nil {
+// 		writeJSONError(w, http.StatusInternalServerError, err.Error())
+// 		return
+// 	}
+// 	if err := writeJSON(w, http.StatusCreated, user); err != nil {
+// 		writeJSONError(w, http.StatusInternalServerError, err.Error())
+// 	}
+// }
 
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
