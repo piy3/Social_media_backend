@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"net/mail"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -24,7 +23,7 @@ type config struct { //interface to hold configuration settings
 }
 
 type mailConfig struct {
-	exp    time.Duration
+	exp time.Duration
 }
 
 type dbConfig struct {
@@ -58,7 +57,7 @@ func (app *application) mount() http.Handler {
 			})
 		})
 		r.Route("/users", func(r chi.Router) {
-			// r.Post("/", app.createUserHandler)
+			r.Put("/activate/{token}", app.activateUserHandler)
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(app.userContextMiddleware)
 				r.Get("/", app.getUserHandler)
@@ -67,8 +66,8 @@ func (app *application) mount() http.Handler {
 			})
 		})
 		//public routes
-		r.Route("/authentication",func(r chi.Router){
-			r.Post("/user",app.registerUserHandler)
+		r.Route("/authentication", func(r chi.Router) {
+			r.Post("/user", app.registerUserHandler)
 		})
 	})
 	return r

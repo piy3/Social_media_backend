@@ -9,22 +9,27 @@ import (
 	"github.com/piy3/social/internal/store"
 )
 
-func Seed(store store.Storage) error {
+func Seed(store store.Storage, db *sql.DB) error {
 	ctx := context.Background()
-	tx:= &sql.Tx{}
+	tx, err := db.BeginTx(ctx,nil)
+	if err != nil {
+		return err
+	}
 	// users
 	users := generateUser(100)
 	for _, u := range users {
 		err := store.Users.Create(ctx,tx, u)
 		if err != nil {
+			_ = tx.Rollback()
 			log.Println("Error creating user:", err)
 			return err
 		}
 	}
+	tx.Commit()
 	// posts
 	posts := generatePosts(200, users)
 	for _, p := range posts {
-		err := store.Posts.Create(ctx,tx, p)
+		err := store.Posts.Create(ctx,p)
 		if err != nil {
 			log.Println("Error creating post:", err)
 			return err
@@ -33,7 +38,7 @@ func Seed(store store.Storage) error {
 
 	comments := generateComments(500, posts, users)
 	for _, c := range comments {
-		err := store.Comments.Create(ctx,tx, c)
+		err := store.Comments.Create(ctx, c)
 		if err != nil {
 			log.Println("Error creating comment:", err)
 			return err
@@ -49,7 +54,7 @@ func generateUser(n int) []*store.User {
 		user[i] = &store.User{
 			Username: "user" + strconv.Itoa(i),
 			Email:    "user" + strconv.Itoa(i) + "@example.com",
-			Password: "password123",
+			// Password: "password123",
 		}
 	}
 	return user

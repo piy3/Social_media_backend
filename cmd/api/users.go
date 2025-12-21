@@ -49,6 +49,15 @@ type UpdateUserPayload struct {
 // 	}
 // }
 
+// func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+// 	token := chi.URLParam(r, "token")
+// 	err := app.store.Users.Activate(r.Context(), token)
+// 	if err != nil {
+// 		writeJSONError(w, http.StatusInternalServerError, err.Error())
+// 		return
+// 	}
+// }
+
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 	if err := writeJSON(w, http.StatusOK, user); err != nil {

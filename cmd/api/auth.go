@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/piy3/social/internal/store"
 )
@@ -14,6 +15,17 @@ type registerUserPayload struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6,max=100"`
 }
+
+func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+	err := app.store.Users.Activate(r.Context(), token)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+	
 
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
 	var payload registerUserPayload
@@ -47,7 +59,10 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	//mail
-	if err := writeJSON(w, http.StatusCreated, user); err != nil {
+	if err := writeJSON(w, http.StatusCreated, struct {
+		User       *store.User `json:"user"`
+		PlainToken string      `json:"token"`
+	}{user, plainToken}); err != nil {
 		writeJSONError(w, http.StatusInternalServerError, err.Error())
 	}
 }
