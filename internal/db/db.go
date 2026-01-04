@@ -11,7 +11,7 @@ func New(addr string, maxOpenConns, maxIdleConns int, maxIdleTime string) (*sql.
 	// Implementation for creating and configuring a new database connection
 	db, err := sql.Open("postgres", addr) 
 	if err != nil {
-		return nil, err
+		return nil, err 
 	}
 	duration,err := time.ParseDuration(maxIdleTime)
 	if err != nil {

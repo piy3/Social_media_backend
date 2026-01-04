@@ -1,0 +1,23 @@
+{{define "subject"}}You're invited to join Social{{end}}
+
+{{define "body"}}
+
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>You're invited to join Social</title>
+  </head>
+  <body>
+    <h1>Hi, {{.Username}}! You're invited to join Social!</h1>
+    <p>Hello,</p>
+    <p>You've been invited to join Social. Click the link below to accept the invitation and set up your account:</p>
+    <p><a href="{{.ActivationURL}}">Accept Invitation</a></p>
+    <p>If you did not expect this invitation, you can safely ignore this email.</p>
+    <p>Best regards,<br>The Social Team</p>
+  </body>
+</html>
+
+{{end}}

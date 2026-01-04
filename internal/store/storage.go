@@ -26,7 +26,7 @@ type Storage struct {
 		Delete(context.Context, int64) error
 		Activate(context.Context, string) error
 	}	
-	Comments interface {
+	Comments interface {	
 		Create(context.Context, *Comment) error
 		GetByPostId(context.Context, int64) ([]*Comment, error)
 	}
@@ -36,7 +36,7 @@ func NewStorage(db *sql.DB) Storage {
 	return Storage{
 		Posts:    &PostStore{db},
 		Users:    &UserStore{db},
-		Comments: &CommentStore{db},
+		Comments: &CommentStore{db}, 
 	} 
 }
 

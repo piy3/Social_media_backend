@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/piy3/social/internal/db"
 	"github.com/piy3/social/internal/env"
+	"github.com/piy3/social/internal/mailer"
 	"github.com/piy3/social/internal/store"
 )
 
@@ -19,6 +20,7 @@ func main() {
 
 	cfg := config{
 		addr: env.GetString("ADDR", "localhost:8081"),
+		frontendURL: env.GetString("FRONTEND_URL","http://localhost:4000"),
 		db: dbConfig{
 			addr:         env.GetString("DB_ADDR", "postgres://piyush:root123@localhost:5433/socialnetwork?sslmode=disable"),
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 25),
@@ -28,6 +30,11 @@ func main() {
 		env:env.GetString("ENV","development"),
 		mail: mailConfig{
 			exp: time.Hour *24*3, // 3 days
+			sendGrid: sendGridConfig{
+				apiKey: env.GetString("SENDGRID_API_KEY", ""),
+				
+			},
+			fromEmail: env.GetString("SENDGRID_FROM_EMAIL", ""),
 		},
 	}
 	db,err:=db.New(
@@ -42,9 +49,12 @@ func main() {
 	log.Printf("Connected to database successfully")
 	defer db.Close()
 	store := store.NewStorage(db)
+	mailer:= mailer.NewSendgrid(cfg.mail.sendGrid.apiKey,cfg.mail.fromEmail)
+
 	app := &application{
 		config: cfg,
 		store:store,
+		mailer: mailer,
 	}
 
 

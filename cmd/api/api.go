@@ -7,12 +7,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/piy3/social/internal/mailer"
 	"github.com/piy3/social/internal/store"
 )
 
 type application struct { // Application struct to hold application-wide dependencies ,its a interface
 	config config
 	store  store.Storage
+	mailer mailer.Client
 }
 
 type config struct { //interface to hold configuration settings
@@ -20,10 +22,17 @@ type config struct { //interface to hold configuration settings
 	db   dbConfig
 	env  string
 	mail mailConfig
+	frontendURL string
 }
 
 type mailConfig struct {
+	sendGrid sendGridConfig
+	fromEmail string
 	exp time.Duration
+}
+
+type sendGridConfig struct {	
+	apiKey	string
 }
 
 type dbConfig struct {
@@ -62,7 +71,7 @@ func (app *application) mount() http.Handler {
 				r.Use(app.userContextMiddleware)
 				r.Get("/", app.getUserHandler)
 				r.Patch("/", app.updateUserHandler)
-				r.Delete("/", app.deleteUserHandler)
+				// r.Delete("/", app.deleteUserHandler)
 			})
 		})
 		//public routes

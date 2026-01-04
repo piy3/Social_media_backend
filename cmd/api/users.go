@@ -97,17 +97,17 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromCtx(r)
+// func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+// 	user := getUserFromCtx(r)
 
-	ctx := r.Context()
-	if err := app.store.Users.Delete(ctx, user.ID); err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+// 	ctx := r.Context()
+// 	if err := app.store.Users.Delete(ctx, user.ID); err != nil {
+// 		writeJSONError(w, http.StatusInternalServerError, err.Error())
+// 		return
+// 	}
 
-	w.WriteHeader(http.StatusNoContent)
-}
+// 	w.WriteHeader(http.StatusNoContent)
+// }
 
 func (app *application) userContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

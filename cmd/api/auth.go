@@ -3,10 +3,12 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/piy3/social/internal/mailer"
 	"github.com/piy3/social/internal/store"
 )
 
@@ -58,7 +60,25 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		writeJSONError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	//mail
+	//send mail
+	isProdEnv := app.config.env == "production"
+	activationURL :=fmt.Sprintf("%s/confirm/%s",app.config.frontendURL,plainToken)
+	vars:= struct{
+		Username string
+		ActivationURL string
+	}{
+		Username: user.Username,
+		ActivationURL: activationURL,
+	}
+	err = app.mailer.Send(mailer.UserWelcomeTemplate, user.Username, user.Email, vars,!isProdEnv)
+	if err != nil {
+		//rollback user creation if mail sending fails
+		if err := app.store.Users.Delete(r.Context(), user.ID); err != nil {
+			writeJSONError(w,http.StatusInternalServerError,err.Error())
+			return
+		}
+	}
+
 	if err := writeJSON(w, http.StatusCreated, struct {
 		User       *store.User `json:"user"`
 		PlainToken string      `json:"token"`

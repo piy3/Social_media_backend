@@ -10,6 +10,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const QueryTimeoutDuration = 5 * time.Second
+
 type User struct {
 	ID        int64    `json:"id"`
 	Username  string   `json:"username"`
@@ -67,7 +69,7 @@ func (s *UserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 		// &user.Password,
 		&user.CreatedAt,
 		&user.UpdatedAt,
-		&user.IsActive, 
+		&user.IsActive,
 	)
 	if err != nil {
 		return nil, err
@@ -95,19 +97,45 @@ func (s *UserStore) Update(ctx context.Context, user *User) error {
 	return nil
 }
 
-func (s *UserStore) Delete(ctx context.Context, id int64) error {
+func (s *UserStore) deleteUserInvitations(ctx context.Context, tx *sql.Tx, userID int64) error {
+	query := `DELETE FROM user_invitations WHERE user_id = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserStore) Delete(ctx context.Context, userID int64) error {
+	return withTx(ctx, s.db, func(tx *sql.Tx) error {
+		if err := s.delete(ctx, tx, userID); err != nil {
+			return err
+		}
+
+		if err := s.deleteUserInvitations(ctx, tx, userID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (s *UserStore) delete(ctx context.Context, tx *sql.Tx, id int64) error {
 	query := `DELETE FROM users WHERE id = $1`
-	res, err := s.db.ExecContext(ctx, query, id)
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return ErrNotFound
-	}
+
 	return nil
 }
 
@@ -145,34 +173,34 @@ func createInvitation(ctx context.Context, tx *sql.Tx, userID int64, expiry time
 }
 
 func (s *UserStore) Activate(ctx context.Context, token string) error {
-	return withTx(ctx,s.db,func(tx *sql.Tx) error{
+	return withTx(ctx, s.db, func(tx *sql.Tx) error {
 		//1.find the user having this token
-	user,err:= s.getUserByInvitationToken(ctx,token)
-	if err!=nil{
-		return err
-	}
-	//2.update the user to set activated to true
-	user.IsActive= true
-	if err:= s.update(ctx,tx,user);err!=nil{
-		return err
-	}
-	//3.delete the token from user_invitations table
-	if err:= s.deleteInvitation(ctx,tx,user.ID);err!=nil{
-		return err
-	}
-	return nil
+		user, err := s.getUserByInvitationToken(ctx, token)
+		if err != nil {
+			return err
+		}
+		//2.update the user to set activated to true
+		user.IsActive = true
+		if err := s.update(ctx, tx, user); err != nil {
+			return err
+		}
+		//3.delete the token from user_invitations table
+		if err := s.deleteInvitation(ctx, tx, user.ID); err != nil {
+			return err
+		}
+		return nil
 	})
-	
+
 }
 
 func (s *UserStore) getUserByInvitationToken(ctx context.Context, token string) (*User, error) {
 	query := `SELECT u.id, u.username, u.email,  u.created_at, u.updated_at
 	FROM users u JOIN user_invitations ui ON u.id = ui.user_id
 	WHERE ui.token = $1 AND ui.expiry > NOW()`
-	hash:=sha256.Sum256([]byte(token))
-	hashToken:= hex.EncodeToString(hash[:])
-	user:= &User{}
-	err := s.db.QueryRowContext(ctx, query,hashToken).Scan(
+	hash := sha256.Sum256([]byte(token))
+	hashToken := hex.EncodeToString(hash[:])
+	user := &User{}
+	err := s.db.QueryRowContext(ctx, query, hashToken).Scan(
 		&user.ID,
 		&user.Username,
 		&user.Email,
@@ -185,14 +213,13 @@ func (s *UserStore) getUserByInvitationToken(ctx context.Context, token string) 
 	return user, nil
 }
 
-
-func (s *UserStore) update(ctx context.Context,tx *sql.Tx, user *User) error {
+func (s *UserStore) update(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `UPDATE users 
 		SET is_active = $1,
 			updated_at = NOW()
 		WHERE id = $2
 		RETURNING updated_at`
-	err := tx.QueryRowContext(	
+	err := tx.QueryRowContext(
 		ctx,
 		query,
 		user.IsActive,
@@ -206,7 +233,7 @@ func (s *UserStore) update(ctx context.Context,tx *sql.Tx, user *User) error {
 
 func (s *UserStore) deleteInvitation(ctx context.Context, tx *sql.Tx, userID int64) error {
 	query := `DELETE FROM user_invitations WHERE user_id = $1`
-	_, err := tx.ExecContext(ctx, query, userID)	
+	_, err := tx.ExecContext(ctx, query, userID)
 	if err != nil {
 		return err
 	}
